@@ -1,21 +1,23 @@
 FROM shivanshtalwar0/januscoredeps
-
+ARG JANUS_COMMIT_HASH
+ARG JANUS_URI_CONV_AUTH_TOKEN
+ARG JANUS_URI_CONV_ENDPOINT
 LABEL maintainer="shivansh talwar <shivanshtalwar0@gmail.com>"
 LABEL description="Provides an image with Janus Gateway"
 
 
-RUN echo "reload "
+RUN echo "reload i"
 COPY ./uri.conv.patch /opt/uri.conv.patch	    
 RUN cd ~ \
     && git clone https://github.com/meetecho/janus-gateway.git \
     && cd janus-gateway \
-    && git checkout c3c84d22 \
+    && git checkout ${JANUS_COMMIT_HASH} \
     && git apply /opt/uri.conv.patch \
     && sh autogen.sh \
     && ./configure --prefix=/opt/janus  \
     && make CFLAGS='-std=c99' \
     && make install \
-    && make configs
+    && make configs    
 COPY conf/*.jcfg /opt/janus/etc/janus/
 EXPOSE 10000-10200/udp
 EXPOSE 8188

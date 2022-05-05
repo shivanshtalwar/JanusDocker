@@ -1,7 +1,12 @@
 version: "3.9" # optional since v1.27.0
 services:
   janus-multistreaming:
-    build: .
+    build:
+      context: .
+      args:
+        JANUS_COMMIT_HASH: ${JANUS_COMMIT_HASH}
+        JANUS_URI_CONV_ENDPOINT: ${JANUS_URI_CONV_ENDPOINT}
+        JANUS_URI_CONV_AUTH_TOKEN: ${JANUS_URI_CONV_AUTH_TOKEN}
     ports:
       - "8188:8188"
       - "8088:8088"
