@@ -2,9 +2,11 @@ version: "3.9" # optional since v1.27.0
 services:
   janus-multistreaming:
     network_mode: "host"
+    environment:
+      URI_CONV_ENDPOINT: ${URI_CONV_ENDPOINT}
+      URI_CONV_AUTH_TOKEN: ${URI_CONV_AUTH_TOKEN}
     build:
       context: .
       args:
-        JANUS_COMMIT_HASH: ${JANUS_COMMIT_HASH}
-        URI_CONV_ENDPOINT: ${JANUS_URI_CONV_ENDPOINT}
-        URI_CONV_AUTH_TOKEN: ${JANUS_URI_CONV_AUTH_TOKEN}
+        COMMIT_HASH: ${COMMIT_HASH}
+        

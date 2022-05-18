@@ -19,7 +19,7 @@ general: {
     # Indicate if the server is behind NAT. If so, the server will use STUN
     # to guess its own public IP address and use it in the Contact header of
     # outgoing requests
-    behind_nat = false
+    behind_nat = true
 
     # User-Agent string to be used
     user_agent = "${JANUS_SIP_PLUGIN_USER_AGENT}"
