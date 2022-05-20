@@ -253,9 +253,9 @@ media: {
 # be used for gathering candidates, and enable or disable the
 # internal libnice debugging, if needed.
 nat: {
-    #stun_server = "${JANUS_STUN_SERVER_DOMAIN}"
-    #stun_port = ${JANUS_STUN_SERVER_PORT}
-    #nice_debug = false
+    stun_server = "stun1.l.google.com"
+	stun_port = 19302
+	nice_debug = true
     #full_trickle = true
     #ice_nomination = "regular"
     #ice_keepalive_conncheck = true
