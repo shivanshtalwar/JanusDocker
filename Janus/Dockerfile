@@ -3,7 +3,7 @@ FROM shivanshtalwar0/januscoredeps:2
 ARG COMMIT_HASH=c3c84d22
 LABEL maintainer="shivansh talwar <shivanshtalwar0@gmail.com>"
 LABEL description="Provides an image with Janus Gateway"
-RUN echo "gfdgj"
+RUN echo "gfdgjjjgf"
 COPY *.patch /opt/
 # && git apply /opt/encrypted-uri.patch --verbose 
 

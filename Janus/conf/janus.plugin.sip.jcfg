@@ -22,7 +22,7 @@ general: {
     behind_nat = true
 
     # User-Agent string to be used
-    user_agent = "${JANUS_SIP_PLUGIN_USER_AGENT}"
+    #user_agent = "${JANUS_SIP_PLUGIN_USER_AGENT}"
 
     # Expiration time for registrations
     register_ttl = 3600
