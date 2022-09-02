@@ -1,5 +1,5 @@
 
-FROM shivanshtalwar0/januscoredeps:2
+FROM shivanshtalwar0/januscoredeps
 ARG COMMIT_HASH=c3c84d22
 LABEL maintainer="shivansh talwar <shivanshtalwar0@gmail.com>"
 LABEL description="Provides an image with Janus Gateway"
