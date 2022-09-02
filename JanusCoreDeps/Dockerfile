@@ -1,26 +1,39 @@
 FROM ubuntu:bionic
 
 LABEL maintainer="shivansh talwar <shivanshtalwar0@gmail.com>"
-LABEL description="Provides an image with Janus Gateway"
+LABEL description="Provides an image with Janus Gateway dependencies"
 
-RUN apt-get update -y \
-    && apt-get upgrade -y \
+RUN apt update -y \
+    && apt upgrade -y \
     && apt install aptitude wget -y
-        
+RUN apt install software-properties-common -y 
+
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
+     && apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' \
+     && apt update -y\
+     && apt install cmake -y
+
+# RUN wget https://libav.org/releases/libav-12.3.tar.xz -O libav-12.3.tar.xz \
+#    && tar -xvf libav-12.3.tar.xz \
+#    && cd libav-12.3 \
+#    && ./configure \
+#    && make \
+#    && make install
+#RUN apt-get install ffmpeg  libavcodec-dev libavcodec57 libavdevice-dev libavdevice57 libavfilter-dev libavfilter6 libavformat-dev libavformat57 libavresample-dev libavresample3 libavutil-dev libavutil55 libpostproc-dev libpostproc54 libswresample-dev libswresample2 libswscale-dev libswscale4 -y
+RUN apt install janus-tools -y
+# RUN apt install ffmpeg
+
+RUN apt-get install libavutil-dev libavcodec-dev libavformat-dev -y      
 RUN aptitude install -y libmicrohttpd-dev libjansson-dev \
 	libssl-dev libsrtp-dev libsofia-sip-ua-dev libglib2.0-dev \
 	libopus-dev libogg-dev libcurl4-openssl-dev liblua5.3-dev \
 	libconfig-dev pkg-config gengetopt libtool automake libnanomsg-dev graphviz
 
-RUN apt-get install -y \
+RUN apt install -y \
     sudo \
     make \
     git \
-    cmake \
     graphviz
-
-#RUN apt purge cmake -y
-    
 
 RUN wget https://github.com/doxygen/doxygen/archive/refs/tags/Release_1_8_11.tar.gz
 RUN tar -xf Release_1_8_11.tar.gz
@@ -31,24 +44,22 @@ RUN cd doxygen-Release_1_8_11/ && mkdir build \
 && make \
 && make install
 
-RUN apt-get install python3 python3-pip nginx -y \
+RUN apt install python3 python3-pip nginx -y \
+    && pip3 install scikit-build \
 	&& pip3 install meson ninja \
 	&& export PATH="$PATH:~/.local/bin"
 
-RUN echo $PATH    
 RUN git clone https://gitlab.freedesktop.org/libnice/libnice \
     && cd libnice \
     && meson --prefix=/usr build && ninja -C build && ninja -C build install
-    
-    
-    
+
 RUN cd ~ \
     && git clone https://github.com/cisco/libsrtp.git \
     && cd libsrtp \
     && ./configure --prefix=/usr --enable-openssl \
     && make shared_library \
     && make install
-# 
+
 RUN cd ~ \
     && git clone https://github.com/sctplab/usrsctp \
     && cd usrsctp \
@@ -56,7 +67,7 @@ RUN cd ~ \
     && ./configure --prefix=/usr \
     && make \
     && make install
-# 
+
 RUN cd ~ \
     && git clone https://github.com/warmcat/libwebsockets.git \
     && cd libwebsockets \
@@ -70,12 +81,6 @@ Run cd ~ \
 	&& cd paho.mqtt.c \
 	&& make && make install 
 
-
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.1/cmake-3.20.1.tar.gz
-RUN tar -xf cmake-3.20.1.tar.gz
-RUN cd cmake-3.20.1/ && ./bootstrap && make -j$(nproc) && make install
-RUN echo "cmake installed!"
-
 RUN cd ~ \
 	&& git clone https://github.com/alanxz/rabbitmq-c \
 	&& cd rabbitmq-c \
@@ -85,7 +90,5 @@ RUN cd ~ \
 	&& cmake -DCMAKE_INSTALL_PREFIX=/usr .. \
 	&& make && make install
 
-RUN echo "reload gd"	    
- 
 EXPOSE 7088 8088 8188 8089 7188
 EXPOSE 10000-10200/udp
