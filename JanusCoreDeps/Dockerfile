@@ -25,10 +25,10 @@ RUN apt install janus-tools -y
 
 RUN apt-get install libavutil-dev libavcodec-dev libavformat-dev -y      
 RUN aptitude install -y libmicrohttpd-dev libjansson-dev \
-	libssl-dev libsrtp-dev libsofia-sip-ua-dev libglib2.0-dev \
+	libssl-dev libsrtp-dev  libglib2.0-dev \
 	libopus-dev libogg-dev libcurl4-openssl-dev liblua5.3-dev \
 	libconfig-dev pkg-config gengetopt libtool automake libnanomsg-dev graphviz
-
+#libsofia-sip-ua-dev
 RUN apt install -y \
     sudo \
     make \
@@ -52,6 +52,14 @@ RUN apt install python3 python3-pip nginx -y \
 RUN git clone https://gitlab.freedesktop.org/libnice/libnice \
     && cd libnice \
     && meson --prefix=/usr build && ninja -C build && ninja -C build install
+
+RUN cd ~ \
+    && git clone https://github.com/freeswitch/sofia-sip.git \
+    && cd sofia-sip \
+    && sh autogen.sh \
+    && ./configure \
+    && make \
+    && make install
 
 RUN cd ~ \
     && git clone https://github.com/cisco/libsrtp.git \

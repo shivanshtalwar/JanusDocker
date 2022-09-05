@@ -11,7 +11,7 @@ RUN cd ~ \
     && git clone https://github.com/meetecho/janus-gateway.git \
     && cd janus-gateway \
     # && git checkout "${COMMIT_HASH}" \
-    && git apply /opt/encrypted-uri.patch --verbose \
+    #&& git apply /opt/encrypted-uri.patch --verbose \
     # && git apply /opt/uri.conv.patch --verbose \
     && sh autogen.sh \
     && ./configure --prefix=/opt/janus  \
