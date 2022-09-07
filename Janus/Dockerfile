@@ -1,5 +1,9 @@
 
-FROM shivanshtalwar0/januscoredeps
+# use on linux
+FROM shivanshtalwar0/januscoredeps:x86_64
+# use on arm (apple m1 chip)
+#FROM shivanshtalwar0/januscoredeps:x86_64
+
 ARG COMMIT_HASH=c3c84d22
 LABEL maintainer="shivansh talwar <shivanshtalwar0@gmail.com>"
 LABEL description="Provides an image with Janus Gateway"

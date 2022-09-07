@@ -1,7 +1,7 @@
 general: {
     # Specify which local IP address to bind to for SIP stack.
     # If not set it will be automatically guessed from the system
-    local_ip = "192.168.10.137"
+    #local_ip = "192.168.10.137"
 
     # Specify which local IP address to bind for the media stack.
     # If not set it will be automatically set to the value of local_ip
@@ -31,7 +31,7 @@ general: {
     rtp_port_range = "10000-10200"
 
     # Whether events should be sent to event handlers (default=true)
-    #events = false
+    events = true
 
     # If you need DSCP packet marking and prioritization, you can configure
     # the 'dscp_audio_rtp' and/or 'dscp_video_rtp' property to specific values,

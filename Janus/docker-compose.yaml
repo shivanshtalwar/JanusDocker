@@ -2,6 +2,8 @@ version: "3.9" # optional since v1.27.0
 services:
   janus-multistreaming:
     build: .
+    volumes:
+      - ./recordings:/recordings
     ports:
       - "7088:7088"
       - "8088:8088"

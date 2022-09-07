@@ -285,7 +285,7 @@ nat: {
     # Multiple public IP addresses can be specified as a comma separated list
     # if the Janus is deployed in a DMZ between two 1-1 NAT for internal and
     # external users.
-    nat_1_1_mapping = "192.168.10.137"
+    #nat_1_1_mapping = "192.168.10.137"
     #keep_private_host = true
 
     # You can configure a TURN server in two different ways: specifying a
@@ -402,7 +402,7 @@ loggers: {
 # between statistics for each handle. Setting it to 0 disables them (but
 # not other media-related events).
 events: {
-    #broadcast = true
+    broadcast = true
     #disable = "libjanus_sampleevh.so"
     #stats_period = 5
 }
