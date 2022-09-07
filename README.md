@@ -20,4 +20,11 @@ or can build your own if you got lot of time in this world. by using [JanusCoreD
     cd Janus
     docker build -t dockerusername/janusgateway:latest .
     docker run -d dockerusername/janusgateway:latest
-  
+# volume in docker-compose
+we have mounted /recordings as a volume so that we can do any post-processing on them for example converting them to single wav file from two mjr files using converter.py
+
+# Recording Conversion
+basically any same call-id based mjr files like `call-id-peer-audio.mjr` and `call-id-user-audio.mjr` will be merged and single `call-id.wav` file is produced as a result of `converter.py` script
+```bash
+python3 converter.py
+```
