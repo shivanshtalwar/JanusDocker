@@ -110,12 +110,13 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
   }
 };
 
-const main = async () => {
-  const baseDirPath = path.join(__dirname, recording_directory);
-  await convertMjrFilesToAudioFile(
-    baseDirPath,
-    path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-peer-audio.mjr"),
-    path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-user-audio.mjr")
-  );
-};
-main();
+// const main = async () => {
+//   const baseDirPath = path.join(__dirname, recording_directory);
+  // await convertMjrFilesToAudioFile(
+  //   baseDirPath,
+  //   path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-peer-audio.mjr"),
+  //   path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-user-audio.mjr")
+  // );
+// };
+// main();
+module.exports={convertMjrFilesToAudioFile}
