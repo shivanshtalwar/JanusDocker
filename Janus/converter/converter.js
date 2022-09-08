@@ -3,23 +3,27 @@ const _ = require("lodash");
 const aigle = require("aigle");
 const Aigle = aigle.Aigle;
 const path = require("path");
-const recording_directory = "../recordings";
+const { Subject } = require("rxjs");
 
-const spawnPromise = (cmd, args) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const runCommand = spawn(cmd, args, { shell: true });
-      runCommand.on("close", (code) => {
-        resolve(code);
-      });
-      runCommand.stdout.on("data", (data) => resolve(data.toString()));
-      runCommand.on("error", (err) => {
-        throw new Error(err.message);
-      });
-    } catch (e) {
-      reject(e);
-    }
+const spawnObservable = (cmd, args) => {
+  const observable = new Subject();
+  const writeObservable = new Subject();
+  const runCommand = spawn(cmd, args, { shell: true });
+  runCommand.on("close", (code) => {
+    observable.complete({ code });
   });
+  writeObservable.subscribe({
+    next: (data) => {
+      runCommand.stdin.write(data);
+    },
+  });
+  runCommand.stdout.on("data", (data) => {
+    observable.next(data.toString());
+  });
+  runCommand.on("error", (err) => {
+    observable.error(err);
+  });
+  return { events: observable.asObservable(), sender: writeObservable };
 };
 
 const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
@@ -64,11 +68,41 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           type,
         });
       }
-
-      let result = await spawnPromise(`janus-pp-rec`, [filePath, wavFilePath]);
-      console.info(result);
-      result = await spawnPromise(`rm`, [`-rf ${filePath}`]);
-      console.info(result);
+      await new Aigle((resolve, reject) => {
+        const { events: converter } = spawnObservable(`janus-pp-rec`, [
+          filePath,
+          wavFilePath,
+        ]);
+        converter.subscribe({
+          next: (data) => {
+            console.info(data);
+            resolve();
+          },
+          error: (error) => {
+            reject(error);
+          },
+          complete: () => {
+            console.info("completed");
+            resolve();
+          },
+        });
+      });
+      await new Aigle((resolve, reject) => {
+        const { events: remover } = spawnObservable(`rm`, [`-rf ${filePath}`]);
+        remover.subscribe({
+          next: (data) => {
+            console.info(data);
+            resolve();
+          },
+          error: (error) => {
+            reject(error);
+          },
+          complete: () => {
+            console.info("completed");
+            resolve();
+          },
+        });
+      });
     } catch (error) {
       console.error(error);
       gotError = true;
@@ -97,26 +131,46 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           targetDirectoryPath,
           wavFile.callerId + ".wav"
         );
-        result = await spawnPromise("ffmpeg", [
-          `-y ${wavFilesToken} -filter_complex amix=inputs=${wavFile.files.length}:duration=first:dropout_transition=${wavFile.files.length} ${targetPath}`,
-        ]);
-        console.info(result);
-        result = await spawnPromise(`rm`, [`-rf ${wavFilesRemoveToken}`]);
-        console.info(result);
+        await new Aigle((resolve, reject) => {
+          const { events: combiner } = spawnObservable("ffmpeg", [
+            `-y ${wavFilesToken} -filter_complex amix=inputs=${wavFile.files.length}:duration=first:dropout_transition=${wavFile.files.length} ${targetPath}`,
+          ]);
+          combiner.subscribe({
+            next: (data) => {
+              console.info(data);
+              resolve();
+            },
+            error: (error) => {
+              reject();
+            },
+            complete: () => {
+              console.info("completed");
+              resolve();
+            },
+          });
+        });
+        await new Aigle((resolve, reject) => {
+          const { events: remover } = spawnObservable(`rm`, [
+            `-rf ${wavFilesRemoveToken}`,
+          ]);
+          remover.subscribe({
+            next: (data) => {
+              console.info(data);
+              resolve()
+            },
+            error: (error) => {
+              reject(error)
+            },
+            complete: () => {
+              console.info("completed");
+              resolve()
+            },
+          });
+        });
       });
     } catch (error) {
       console.error(error);
     }
   }
 };
-
-// const main = async () => {
-//   const baseDirPath = path.join(__dirname, recording_directory);
-  // await convertMjrFilesToAudioFile(
-  //   baseDirPath,
-  //   path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-peer-audio.mjr"),
-  //   path.join(baseDirPath, "1ifAS6iMVKSwGtquGDm2Fco-user-audio.mjr")
-  // );
-// };
-// main();
-module.exports={convertMjrFilesToAudioFile}
+module.exports = { convertMjrFilesToAudioFile };
