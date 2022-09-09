@@ -1,10 +1,11 @@
 const spawn = require("child_process").spawn;
 const _ = require("lodash");
+var ffmpeg = require("fluent-ffmpeg");
 const aigle = require("aigle");
 const Aigle = aigle.Aigle;
 const path = require("path");
 const { Subject } = require("rxjs");
-
+const fs = require("fs");
 const spawnObservable = (cmd, args) => {
   const observable = new Subject();
   const writeObservable = new Subject();
@@ -87,22 +88,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           },
         });
       });
-      await new Aigle((resolve, reject) => {
-        const { events: remover } = spawnObservable(`rm`, [`-rf ${filePath}`]);
-        remover.subscribe({
-          next: (data) => {
-            console.info(data);
-            resolve();
-          },
-          error: (error) => {
-            reject(error);
-          },
-          complete: () => {
-            console.info("completed");
-            resolve();
-          },
-        });
-      });
+      fs.rmSync(filePath, { force: true, recursive: true });
     } catch (error) {
       console.error(error);
       gotError = true;
@@ -115,58 +101,33 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
         if (_.size(wavFile.files) < 2) {
           throw "Files Insufficient for conversion";
         }
-        const wavFilesToken = _.join(
-          _.map(wavFile.files, (wavFile) => {
-            return `-i ${wavFile.wavFilePath}`;
-          }),
-          " "
-        );
-        const wavFilesRemoveToken = _.join(
-          _.map(wavFile.files, (wavFile) => {
-            return `${wavFile.wavFilePath}`;
-          }),
-          " "
-        );
         const targetPath = path.join(
           targetDirectoryPath,
           wavFile.callerId + ".wav"
         );
-        await new Aigle((resolve, reject) => {
-          const { events: combiner } = spawnObservable("ffmpeg", [
-            `-y ${wavFilesToken} -filter_complex amix=inputs=${wavFile.files.length}:duration=first:dropout_transition=${wavFile.files.length} ${targetPath}`,
-          ]);
-          combiner.subscribe({
-            next: (data) => {
-              console.info(data);
-              resolve();
-            },
-            error: (error) => {
-              reject();
-            },
-            complete: () => {
-              console.info("completed");
-              resolve();
-            },
-          });
+        const command = ffmpeg();
+        _.each(wavFile.files, (wavFile) => {
+          command.addInput(wavFile.wavFilePath);
         });
-        await new Aigle((resolve, reject) => {
-          const { events: remover } = spawnObservable(`rm`, [
-            `-rf ${wavFilesRemoveToken}`,
-          ]);
-          remover.subscribe({
-            next: (data) => {
-              console.info(data);
-              resolve()
+        command
+          .complexFilter([
+            {
+              filter: 'amix',
+              inputs: wavFile.files.length,
+              options: ['duration=first','dropout_transition=0']
             },
-            error: (error) => {
-              reject(error)
-            },
-            complete: () => {
-              console.info("completed");
-              resolve()
-            },
-          });
-        });
+          ])
+          .addOutput(targetPath,{end:true})
+          .on("error", (err) => {
+            console.log("An error occurred: " + err);
+          })
+          .on("end", function () {
+            console.log("Processing finished !");
+            _.each(wavFile.files,(file)=>{
+              fs.rmSync(file.wavFilePath,{force:true,recursive:true})
+            })
+          })
+          .run();
       });
     } catch (error) {
       console.error(error);
