@@ -10,42 +10,24 @@ RUN apt install software-properties-common -y
 
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
      && apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' \
-     && apt update -y\
-     && apt install cmake -y
+     && apt update -y
 
-# RUN wget https://libav.org/releases/libav-12.3.tar.xz -O libav-12.3.tar.xz \
-#    && tar -xvf libav-12.3.tar.xz \
-#    && cd libav-12.3 \
-#    && ./configure \
-#    && make \
-#    && make install
-#RUN apt-get install ffmpeg  libavcodec-dev libavcodec57 libavdevice-dev libavdevice57 libavfilter-dev libavfilter6 libavformat-dev libavformat57 libavresample-dev libavresample3 libavutil-dev libavutil55 libpostproc-dev libpostproc54 libswresample-dev libswresample2 libswscale-dev libswscale4 -y
-RUN apt install janus-tools -y
-# RUN apt install ffmpeg
+RUN apt install cmake ffmpeg libavutil-dev libavcodec-dev libavformat-dev python3 python3-pip nginx sudo make git graphviz flex bison -y
 
-RUN apt-get install libavutil-dev libavcodec-dev libavformat-dev -y      
 RUN aptitude install -y libmicrohttpd-dev libjansson-dev \
 	libssl-dev libsrtp-dev  libglib2.0-dev \
 	libopus-dev libogg-dev libcurl4-openssl-dev liblua5.3-dev \
 	libconfig-dev pkg-config gengetopt libtool automake libnanomsg-dev graphviz
-#libsofia-sip-ua-dev
-RUN apt install -y \
-    sudo \
-    make \
-    git \
-    graphviz
 
 RUN wget https://github.com/doxygen/doxygen/archive/refs/tags/Release_1_8_11.tar.gz
 RUN tar -xf Release_1_8_11.tar.gz
-RUN apt-get install flex bison -y
 RUN cd doxygen-Release_1_8_11/ && mkdir build \
 && cd build \
 && cmake -G "Unix Makefiles" .. \
 && make \
 && make install
 
-RUN apt install python3 python3-pip nginx -y \
-    && pip3 install scikit-build \
+RUN pip3 install scikit-build \
 	&& pip3 install meson ninja \
 	&& export PATH="$PATH:~/.local/bin"
 
@@ -84,7 +66,7 @@ RUN cd ~ \
     && cmake -DLWS_MAX_SMP=1 -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_C_FLAGS="-fpic" .. \
     && make \
     && make install
-Run cd ~ \ 
+RUN cd ~ \ 
 	&& git clone https://github.com/eclipse/paho.mqtt.c.git \
 	&& cd paho.mqtt.c \
 	&& make && make install 
@@ -97,6 +79,14 @@ RUN cd ~ \
 	&& mkdir build && cd build \
 	&& cmake -DCMAKE_INSTALL_PREFIX=/usr .. \
 	&& make && make install
-
-EXPOSE 7088 8088 8188 8089 7188
-EXPOSE 10000-10200/udp
+RUN apt install curl gcc g++ make -y    
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+RUN apt install -y nodejs
+RUN cd ~ \
+    && git clone https://github.com/meetecho/janus-gateway.git \
+    && cd janus-gateway \
+    && sh autogen.sh \
+    && ./configure --prefix=/opt/janus-tools --enable-post-processing  \
+    && make CFLAGS='-std=c99' \
+    && make install 
+ENV PATH "$PATH:/opt/janus-tools/bin"

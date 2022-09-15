@@ -77,7 +77,6 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
         converter.subscribe({
           next: (data) => {
             console.info(data);
-            resolve();
           },
           error: (error) => {
             reject(error);
@@ -85,10 +84,11 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           complete: () => {
             console.info("completed");
             resolve();
+            fs.rmSync(filePath, { force: true, recursive: true });
           },
         });
       });
-      fs.rmSync(filePath, { force: true, recursive: true });
+      
     } catch (error) {
       console.error(error);
       gotError = true;
