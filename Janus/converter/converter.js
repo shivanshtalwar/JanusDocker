@@ -6,6 +6,7 @@ const Aigle = aigle.Aigle;
 const path = require("path");
 const { Subject } = require("rxjs");
 const fs = require("fs");
+const { resolve } = require("path");
 const spawnObservable = (cmd, args) => {
   const observable = new Subject();
   const writeObservable = new Subject();
@@ -83,12 +84,11 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           },
           complete: () => {
             console.info("completed");
-            resolve();
             fs.rmSync(filePath, { force: true, recursive: true });
+            resolve();
           },
         });
       });
-      
     } catch (error) {
       console.error(error);
       gotError = true;
@@ -98,36 +98,40 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
   if (!gotError) {
     try {
       await Aigle.each(wavFilesToProcess, async (wavFile) => {
-        if (_.size(wavFile.files) < 2) {
-          throw "Files Insufficient for conversion";
-        }
-        const targetPath = path.join(
-          targetDirectoryPath,
-          wavFile.callerId + ".wav"
-        );
-        const command = ffmpeg();
-        _.each(wavFile.files, (wavFile) => {
-          command.addInput(wavFile.wavFilePath);
-        });
-        command
-          .complexFilter([
-            {
-              filter: 'amix',
-              inputs: wavFile.files.length,
-              options: ['duration=first','dropout_transition=0']
-            },
-          ])
-          .addOutput(targetPath,{end:true})
-          .on("error", (err) => {
-            console.log("An error occurred: " + err);
-          })
-          .on("end", function () {
-            console.log("Processing finished !");
-            _.each(wavFile.files,(file)=>{
-              fs.rmSync(file.wavFilePath,{force:true,recursive:true})
+        await new Aigle((resolve, reject) => {
+          if (_.size(wavFile.files) < 2) {
+            throw "Files Insufficient for conversion";
+          }
+          const targetPath = path.join(
+            targetDirectoryPath,
+            wavFile.callerId + ".wav"
+          );
+          const command = ffmpeg();
+          _.each(wavFile.files, (wavFile) => {
+            command.addInput(wavFile.wavFilePath);
+          });
+          command
+            .complexFilter([
+              {
+                filter: "amix",
+                inputs: wavFile.files.length,
+                options: ["duration=first", "dropout_transition=0"],
+              },
+            ])
+            .addOutput(targetPath, { end: true })
+            .on("error", (err) => {
+              console.log("An error occurred: " + err);
+              reject();
             })
-          })
-          .run();
+            .on("end", function () {
+              console.log("Processing finished !");
+              _.each(wavFile.files, (file) => {
+                fs.rmSync(file.wavFilePath, { force: true, recursive: true });
+              });
+              resolve();
+            })
+            .run();
+        });
       });
     } catch (error) {
       console.error(error);
