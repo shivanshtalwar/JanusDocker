@@ -23,8 +23,14 @@ or can build your own if you got lot of time in this world. by using [JanusCoreD
 # volume in docker-compose
 we have mounted /recordings as a volume so that we can do any post-processing on them for example converting them to single wav file from two mjr files using converter.py
 
-# Recording Conversion
-basically any same call-id based mjr files like `call-id-peer-audio.mjr` and `call-id-user-audio.mjr` will be merged and single `call-id.wav` file is produced as a result of `converter.py` script
+# Recording Conversion using converter
+In janus folder you will find `converter` directory , which is basically a express server offering janus-event-handler webhook.
+inside the docker,  `converter` container shares recordings volume with `janus` container so whenever there is new recording to be processed it converts it into `<callId>.wav` file and uploads the file to uticen endpoint of our choice with external user token associated to it. followed by removal of recording from shared `recordings` volume.
+Same idea can be extended to kubernetes in which janus pod and converter pod shares a common volume and communicate together as a single unit to make the recording file processing seamless
+# Env file
+In janus folder you will find `.env` file which in which you can specify  .
 ```bash
-python3 converter.py
+URI_CONV_ENDPOINT=<endpoint to decypt sip uri to make the call used by janus>
+URI_CONV_AUTH_TOKEN=<utt external user token with required privileges>
+RECORDING_UPLOAD_ENDPOINT=<endpoint where you want to upload the recording once ready>
 ```
