@@ -1,26 +1,25 @@
-From 3cb50f59bf90f5fb4992daac10dc9d9ce39cba04 Mon Sep 17 00:00:00 2001
+From 303a8a3e34eadefe04dc0dd0365fef237547185d Mon Sep 17 00:00:00 2001
 From: shivanshtalwar <shivansh@utopia.tech>
-Date: Thu, 5 May 2022 19:22:12 +0530
-Subject: [PATCH] fix encrypted uri patch
+Date: Thu, 17 Nov 2022 17:14:59 +0200
+Subject: [PATCH] latest sip patch
 
 ---
- src/plugins/janus_sip.c | 109 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 106 insertions(+), 3 deletions(-)
+ src/plugins/janus_sip.c | 108 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 106 insertions(+), 2 deletions(-)
 
 diff --git a/src/plugins/janus_sip.c b/src/plugins/janus_sip.c
-index e74ae65d..a40673ef 100644
+index 690b6d0b..814e51b6 100644
 --- a/src/plugins/janus_sip.c
 +++ b/src/plugins/janus_sip.c
-@@ -660,6 +660,8 @@
+@@ -661,6 +661,7 @@
   */
  
  #include "plugin.h"
 +#include <curl/curl.h>
-+
  
  #include <arpa/inet.h>
  #include <net/if.h>
-@@ -701,6 +703,101 @@
+@@ -702,6 +703,102 @@
  #define JANUS_SIP_AUTHOR			"Meetecho s.r.l."
  #define JANUS_SIP_PACKAGE			"janus.plugin.sip"
  
@@ -119,10 +118,11 @@ index e74ae65d..a40673ef 100644
 +	return uri;
 +}
 +
++
  /* Plugin methods */
  janus_plugin *create(void);
  int janus_sip_init(janus_callbacks *callback, const char *config_path);
-@@ -1577,6 +1672,7 @@ static json_t *janus_sip_get_incoming_headers(const sip_t *sip, const janus_sip_
+@@ -1583,6 +1680,7 @@ static json_t *janus_sip_get_incoming_headers(const sip_t *sip, const janus_sip_
  #define JANUS_SIP_ERROR_TOO_STRICT			452
  #define JANUS_SIP_ERROR_HELPER_ERROR		453
  #define JANUS_SIP_ERROR_NO_SUCH_CALLID		454
@@ -130,7 +130,7 @@ index e74ae65d..a40673ef 100644
  
  
  /* Random string helper (for call-ids) */
-@@ -3469,7 +3565,14 @@ static void *janus_sip_handler(void *data) {
+@@ -3508,7 +3606,13 @@ static void *janus_sip_handler(void *data) {
  			json_t *aar = json_object_get(root, "autoaccept_reinvites");
  			session->media.autoaccept_reinvites = aar ? json_is_true(aar) : TRUE;
  			/* Parse address */
@@ -142,25 +142,18 @@ index e74ae65d..a40673ef 100644
 +				g_snprintf(error_cause, 512, "Failed to convert uri");
 +				goto error;
 +			}
-+
  			janus_sip_uri_t target_uri;
  			if(janus_sip_parse_uri(&target_uri, uri_text) < 0) {
  				JANUS_LOG(LOG_ERR, "Invalid user address %s\n", uri_text);
-@@ -5915,7 +6018,7 @@ void janus_sip_sofia_callback(nua_event_t event, int status, char const *phrase,
+@@ -5967,7 +6071,7 @@ void janus_sip_sofia_callback(nua_event_t event, int status, char const *phrase,
  			json_object_set_new(call, "sip", json_string("event"));
  			json_t *calling = json_object();
  			json_object_set_new(calling, "event", json_string(in_progress ? "progress" : "accepted"));
 -			json_object_set_new(calling, "username", json_string(session->callee));
-+			/*json_object_set_new(calling, "username", json_string(session->callee));*/
++			// json_object_set_new(calling, "username", json_string(session->callee));
  			if(is_focus)
  				json_object_set_new(calling, "isfocus", json_true());
  			if(session->incoming_header_prefixes) {
-@@ -7195,4 +7298,4 @@ gpointer janus_sip_sofia_thread(gpointer user_data) {
- 	JANUS_LOG(LOG_VERB, "Leaving sofia loop thread...\n");
- 	g_thread_unref(g_thread_self());
- 	return NULL;
--}
-+}
-\ No newline at end of file
 -- 
-2.25.1
+2.38.1
+
