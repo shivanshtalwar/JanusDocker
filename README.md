@@ -11,15 +11,17 @@ or can build your own if you got lot of time in this world. by using [JanusCoreD
 
 
 # QuickStart
-
-    cd Janus
-    docker-compose up -d # note option -d to start it in detached mode
 ### Env file
 In janus folder you will find `.env` file which in which you can specify  .
 ```bash
 URI_CONV_ENDPOINT=<endpoint to decypt sip uri to make the call used by janus>
 URI_CONV_AUTH_TOKEN=<utt external user token with required privileges>
 RECORDING_UPLOAD_ENDPOINT=<endpoint where you want to upload the recording once ready>
+```
+### Run containers
+```bash
+cd Janus
+docker-compose up --build -d # note option -d to start it in detached mode
 ```
 
 # Build
