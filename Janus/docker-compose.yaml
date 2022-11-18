@@ -9,6 +9,8 @@ services:
     env_file:
       - .env
     network_mode: "host"
+    restart: always
+
     # ports:
     #   - "7088:7088"
     #   - "8088:8088"
@@ -24,6 +26,7 @@ services:
       - ./recordings:/recordings
     env_file:
       - .env
+    restart: always  
 
 volumes:
   recordings:
