@@ -24,7 +24,7 @@ general: {
                                                 # requests with an application/json payload. In case
                                                 # authentication is required to contact the backend, set
                                                 # the credentials as well (basic authentication only).
-        backend = "http://converter:8010/event-handler"
+        backend = "http://127.0.0.1:8010/event-handler"
         #backend_user = "myuser"
         #backend_pwd = "mypwd"
 

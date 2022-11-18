@@ -112,4 +112,8 @@ router.post("/event-handler", function (req, res, next) {
   res.json({});
 });
 
+router.get("/health", function (req, res, next) {
+    res.json({message:"converter operational"});
+});
+
 module.exports = router;

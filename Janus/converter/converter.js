@@ -6,7 +6,6 @@ const Aigle = aigle.Aigle;
 const path = require("path");
 const { Subject } = require("rxjs");
 const fs = require("fs");
-const { resolve } = require("path");
 const spawnObservable = (cmd, args) => {
   const observable = new Subject();
   const writeObservable = new Subject();
