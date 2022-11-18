@@ -14,6 +14,13 @@ or can build your own if you got lot of time in this world. by using [JanusCoreD
 
     cd Janus
     docker-compose up -d # note option -d to start it in detached mode
+### Env file
+In janus folder you will find `.env` file which in which you can specify  .
+```bash
+URI_CONV_ENDPOINT=<endpoint to decypt sip uri to make the call used by janus>
+URI_CONV_AUTH_TOKEN=<utt external user token with required privileges>
+RECORDING_UPLOAD_ENDPOINT=<endpoint where you want to upload the recording once ready>
+```
 
 # Build
 
@@ -27,10 +34,3 @@ we have mounted /recordings as a volume so that we can do any post-processing on
 In janus folder you will find `converter` directory , which is basically a express server offering janus-event-handler webhook.
 inside the docker,  `converter` container shares recordings volume with `janus` container so whenever there is new recording to be processed it converts it into `<callId>.wav` file and uploads the file to uticen endpoint of our choice with external user token associated to it. followed by removal of recording from shared `recordings` volume.
 Same idea can be extended to kubernetes in which janus pod and converter pod shares a common volume and communicate together as a single unit to make the recording file processing seamless
-# Env file
-In janus folder you will find `.env` file which in which you can specify  .
-```bash
-URI_CONV_ENDPOINT=<endpoint to decypt sip uri to make the call used by janus>
-URI_CONV_AUTH_TOKEN=<utt external user token with required privileges>
-RECORDING_UPLOAD_ENDPOINT=<endpoint where you want to upload the recording once ready>
-```
