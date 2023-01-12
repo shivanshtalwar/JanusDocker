@@ -1,17 +1,17 @@
-From 303a8a3e34eadefe04dc0dd0365fef237547185d Mon Sep 17 00:00:00 2001
+From 2c80768a3937bd47eba15d900f809361752f1742 Mon Sep 17 00:00:00 2001
 From: shivanshtalwar <shivansh@utopia.tech>
-Date: Thu, 17 Nov 2022 17:14:59 +0200
-Subject: [PATCH] latest sip patch
+Date: Thu, 12 Jan 2023 16:13:12 +0530
+Subject: [PATCH] updated patch
 
 ---
  src/plugins/janus_sip.c | 108 +++++++++++++++++++++++++++++++++++++++-
  1 file changed, 106 insertions(+), 2 deletions(-)
 
 diff --git a/src/plugins/janus_sip.c b/src/plugins/janus_sip.c
-index 690b6d0b..814e51b6 100644
+index a92e0adc..e93b1271 100644
 --- a/src/plugins/janus_sip.c
 +++ b/src/plugins/janus_sip.c
-@@ -661,6 +661,7 @@
+@@ -662,6 +662,7 @@
   */
  
  #include "plugin.h"
@@ -19,7 +19,7 @@ index 690b6d0b..814e51b6 100644
  
  #include <arpa/inet.h>
  #include <net/if.h>
-@@ -702,6 +703,102 @@
+@@ -703,6 +704,102 @@
  #define JANUS_SIP_AUTHOR			"Meetecho s.r.l."
  #define JANUS_SIP_PACKAGE			"janus.plugin.sip"
  
@@ -122,7 +122,7 @@ index 690b6d0b..814e51b6 100644
  /* Plugin methods */
  janus_plugin *create(void);
  int janus_sip_init(janus_callbacks *callback, const char *config_path);
-@@ -1583,6 +1680,7 @@ static json_t *janus_sip_get_incoming_headers(const sip_t *sip, const janus_sip_
+@@ -1585,6 +1682,7 @@ static json_t *janus_sip_get_incoming_headers(const sip_t *sip, const janus_sip_
  #define JANUS_SIP_ERROR_TOO_STRICT			452
  #define JANUS_SIP_ERROR_HELPER_ERROR		453
  #define JANUS_SIP_ERROR_NO_SUCH_CALLID		454
@@ -130,7 +130,7 @@ index 690b6d0b..814e51b6 100644
  
  
  /* Random string helper (for call-ids) */
-@@ -3508,7 +3606,13 @@ static void *janus_sip_handler(void *data) {
+@@ -3510,7 +3608,13 @@ static void *janus_sip_handler(void *data) {
  			json_t *aar = json_object_get(root, "autoaccept_reinvites");
  			session->media.autoaccept_reinvites = aar ? json_is_true(aar) : TRUE;
  			/* Parse address */
@@ -145,7 +145,7 @@ index 690b6d0b..814e51b6 100644
  			janus_sip_uri_t target_uri;
  			if(janus_sip_parse_uri(&target_uri, uri_text) < 0) {
  				JANUS_LOG(LOG_ERR, "Invalid user address %s\n", uri_text);
-@@ -5967,7 +6071,7 @@ void janus_sip_sofia_callback(nua_event_t event, int status, char const *phrase,
+@@ -5971,7 +6075,7 @@ void janus_sip_sofia_callback(nua_event_t event, int status, char const *phrase,
  			json_object_set_new(call, "sip", json_string("event"));
  			json_t *calling = json_object();
  			json_object_set_new(calling, "event", json_string(in_progress ? "progress" : "accepted"));
