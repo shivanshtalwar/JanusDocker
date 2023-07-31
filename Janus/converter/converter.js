@@ -30,7 +30,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
   const wavFilesToProcess = {};
   let gotError = false;
 
-  await Aigle.each(mjrFiles, async (filePath) => {
+  await Aigle.eachSeries(mjrFiles, async (filePath) => {
     try {
       const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
       const fileNameTokens = _.split(fileNameWithoutExtension, "-");
@@ -87,7 +87,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
   });
   if (!gotError) {
     try {
-      await Aigle.each(wavFilesToProcess, async (wavFile) => {
+      await Aigle.eachSeries(wavFilesToProcess, async (wavFile) => {
         await new Aigle((resolve, reject) => {
           if (_.size(wavFile.files) < 2) {
             throw new Error("Files Insufficient for conversion");
