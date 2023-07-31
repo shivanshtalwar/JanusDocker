@@ -99,7 +99,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
             command.addInput(wavFile.wavFilePath);
           });
           command
-            .mergeToFile(targetFile, targetPath)
+            .mergeToFile(targetFile, './')
             // command
             //   .complexFilter([
             //     {
@@ -108,7 +108,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
             //       options: ["duration=first", "dropout_transition=0"],
             //     },
             //   ])
-            //   .addOutput(targetPath, { end: true })
+            .addOutput(targetPath, { end: true })
             .on("error", (err) => {
               console.log("An error occurred: " + err);
               reject();
