@@ -1,13 +1,16 @@
 import Aigle from "aigle";
-import dotenv from "dotenv";
-dotenv.config({ path: join(__dirname, "../../.env") });
-import { readFileSync, rmSync } from "fs";
-import { Router } from "express";
-import { transform } from "lodash";
-import { join } from "path";
-import { convertMjrFilesToAudioFile } from "../converter";
+import _ from "lodash";
 import axios from "axios";
 import FormData from "form-data";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+import { readFileSync, rmSync } from "fs";
+import { Router } from "express";
+import { convertMjrFilesToAudioFile } from "../converter.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, "../../.env") });
 
 const router = Router();
 const recordingDirectory = "../../recordings";
@@ -55,7 +58,7 @@ setInterval(async () => {
 }, 1000);
 
 const processEvents = (events, state) => {
-  return transform(
+  return _.transform(
     events,
     (result, item) => {
       const { session_id, handle_id } = item;

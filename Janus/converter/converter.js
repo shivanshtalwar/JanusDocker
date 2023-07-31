@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { last, split, first, size, each } from "lodash";
+import _ from "lodash";
 import ffmpeg from "fluent-ffmpeg";
 import Aigle from "aigle";
 import { join } from "path";
@@ -32,13 +32,13 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
 
   await Aigle.each(mjrFiles, async (filePath) => {
     try {
-      const fileNameWithoutExtension = last(split(first(split(filePath, ".mjr")), "/"));
-      const fileNameTokens = split(fileNameWithoutExtension, "-");
+      const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
+      const fileNameTokens = _.split(fileNameWithoutExtension, "-");
       const [callerId, owner, type] = fileNameTokens;
       if (size(fileNameTokens) !== 3) {
         throw "Invalid mjr file name";
       }
-      const wavFilePath = join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
+      const wavFilePath = _.join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
       if (!wavFilesToProcess[callerId]) {
         wavFilesToProcess[callerId] = {
           callerId,
@@ -125,4 +125,4 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
     }
   }
 };
-export default { convertMjrFilesToAudioFile };
+export { convertMjrFilesToAudioFile };
