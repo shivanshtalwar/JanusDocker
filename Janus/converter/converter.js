@@ -1,11 +1,10 @@
-const spawn = require("child_process").spawn;
-const _ = require("lodash");
-var ffmpeg = require("fluent-ffmpeg");
-const aigle = require("aigle");
-const Aigle = aigle.Aigle;
-const path = require("path");
-const { Subject } = require("rxjs");
-const fs = require("fs");
+import { spawn } from "child_process";
+import { last, split, first, size, each } from "lodash";
+import ffmpeg from "fluent-ffmpeg";
+import Aigle from "aigle";
+import { join } from "path";
+import { Subject } from "rxjs";
+import { rmSync } from "fs";
 const spawnObservable = (cmd, args) => {
   const observable = new Subject();
   const writeObservable = new Subject();
@@ -33,18 +32,13 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
 
   await Aigle.each(mjrFiles, async (filePath) => {
     try {
-      const fileNameWithoutExtension = _.last(
-        _.split(_.first(_.split(filePath, ".mjr")), "/")
-      );
-      const fileNameTokens = _.split(fileNameWithoutExtension, "-");
+      const fileNameWithoutExtension = last(split(first(split(filePath, ".mjr")), "/"));
+      const fileNameTokens = split(fileNameWithoutExtension, "-");
       const [callerId, owner, type] = fileNameTokens;
-      if (_.size(fileNameTokens) !== 3) {
+      if (size(fileNameTokens) !== 3) {
         throw "Invalid mjr file name";
       }
-      const wavFilePath = path.join(
-        targetDirectoryPath,
-        `${fileNameWithoutExtension}.wav`
-      );
+      const wavFilePath = join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
       if (!wavFilesToProcess[callerId]) {
         wavFilesToProcess[callerId] = {
           callerId,
@@ -70,10 +64,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
         });
       }
       await new Aigle((resolve, reject) => {
-        const { events: converter } = spawnObservable(`janus-pp-rec`, [
-          filePath,
-          wavFilePath,
-        ]);
+        const { events: converter } = spawnObservable(`janus-pp-rec`, [filePath, wavFilePath]);
         converter.subscribe({
           next: (data) => {
             console.info(data);
@@ -83,7 +74,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           },
           complete: () => {
             console.info("completed");
-            fs.rmSync(filePath, { force: true, recursive: true });
+            rmSync(filePath, { force: true, recursive: true });
             resolve();
           },
         });
@@ -98,15 +89,12 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
     try {
       await Aigle.each(wavFilesToProcess, async (wavFile) => {
         await new Aigle((resolve, reject) => {
-          if (_.size(wavFile.files) < 2) {
+          if (size(wavFile.files) < 2) {
             throw "Files Insufficient for conversion";
           }
-          const targetPath = path.join(
-            targetDirectoryPath,
-            wavFile.callerId + ".wav"
-          );
+          const targetPath = join(targetDirectoryPath, wavFile.callerId + ".wav");
           const command = ffmpeg();
-          _.each(wavFile.files, (wavFile) => {
+          each(wavFile.files, (wavFile) => {
             command.addInput(wavFile.wavFilePath);
           });
           command
@@ -124,8 +112,8 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
             })
             .on("end", function () {
               console.log("Processing finished !");
-              _.each(wavFile.files, (file) => {
-                fs.rmSync(file.wavFilePath, { force: true, recursive: true });
+              each(wavFile.files, (file) => {
+                rmSync(file.wavFilePath, { force: true, recursive: true });
               });
               resolve();
             })
@@ -137,4 +125,4 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
     }
   }
 };
-module.exports = { convertMjrFilesToAudioFile };
+export default { convertMjrFilesToAudioFile };

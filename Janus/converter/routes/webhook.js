@@ -1,71 +1,61 @@
-const express = require("express");
-const router = express.Router();
-const _ = require("lodash");
-const { join } = require("path");
-require("dotenv").config({ path: join(__dirname, "../../.env") });
-const { convertMjrFilesToAudioFile } = require("../converter");
-const axios = require("axios");
-const FormData = require("form-data");
+import Aigle from "aigle";
+import dotenv from "dotenv";
+dotenv.config({ path: join(__dirname, "../../.env") });
+import { readFileSync, rmSync } from "fs";
+import { Router } from "express";
+import { transform } from "lodash";
+import { join } from "path";
+import { convertMjrFilesToAudioFile } from "../converter";
+import axios from "axios";
+import FormData from "form-data";
+
+const router = Router();
 const recordingDirectory = "../../recordings";
 const baseDirPath = join(__dirname, recordingDirectory);
 const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
-const fs = require("fs");
+
+// object to store and manage all successful calls for recordings
+let sessions = {};
+
 const uploadFileToServer = async (url, token, { fileBuffer, callId }) => {
   const form = new FormData();
   // Second argument  can take Buffer or Stream (lazily read during the request) too.
   // Third argument is filename if you want to simulate a file upload. Otherwise omit.
   form.append("callId", callId);
-  form.append("file", fileBuffer,`${callId}.wav`);
-  const headers={
+  form.append("file", fileBuffer, `${callId}.wav`);
+  const headers = {
     ...form.getHeaders(),
     authorization: `Bearer ${token}`,
   };
-  console.log(headers)
-  return axios.default.post(url, form, {
-    headers
+  console.log(headers);
+  return axios.post(url, form, {
+    headers,
   });
 };
-/* GET home page. */
-// object to store and manage all successful calls for recordings
-let sessions = {};
+
 // a timer to process each recording and remove them from session after uploading
-setInterval(() => {
-  // console.log(sessions)
-  _.each(sessions, async (item) => {
-    // console.log(item)
-    const { sessionId, handleId, callId, recordingEnd } = item;
+setInterval(async () => {
+  await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
     if (recordingEnd) {
       console.log("recording ended");
       // TODO: process recordings and upload (joining two mjr audio file converting to wav and upload)
-      await convertMjrFilesToAudioFile(
-        baseDirPath,
-        join(baseDirPath, `${callId}-peer-audio.mjr`),
-        join(baseDirPath, `${callId}-user-audio.mjr`)
-      );
-      console.warn('everything done');
+      await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
+      console.warn("everything done");
       const targetDir = join(__dirname, recordingDirectory);
       const recordingFile = join(targetDir, `${callId}.wav`);
-      
       await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
         callId,
-        fileBuffer: fs.readFileSync(recordingFile),
+        fileBuffer: readFileSync(recordingFile),
       });
-      fs.rmSync(recordingFile, { force: true });
+      rmSync(recordingFile, { force: true });
       delete sessions[`${sessionId}_${handleId}`];
     }
   });
 }, 1000);
-// const targetDir = join(__dirname, recordingDirectory);
-// const recordingFile = join(targetDir, `89c3e6aa92036fc4ccf379cdf28dba77.wav`);
-// uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-//   callId: "89c3e6aa92036fc4ccf379cdf28dba77",
-//   fileBuffer: fs.readFileSync(recordingFile),
-// }).then((res)=>{
-//   console.log('cleanup now')
-// });
+
 const processEvents = (events, state) => {
-  return _.transform(
+  return transform(
     events,
     (result, item) => {
       const { session_id, handle_id } = item;
@@ -81,7 +71,7 @@ const processEvents = (events, state) => {
           }
         }
         if (item?.event?.data) {
-          const { event: eventName, "call-id": callId } = item?.event?.data;
+          const { event: eventName, "call-id": callId } = item.event.data;
           // when call is disconnected gracefully by hangup from either side
           if (eventName === "hangup") {
             if (result[`${session_id}_${handle_id}`]) {
@@ -113,7 +103,7 @@ router.post("/event-handler", function (req, res, next) {
 });
 
 router.get("/health", function (req, res, next) {
-    res.json({message:"converter operational"});
+  res.json({ message: "converter operational" });
 });
 
-module.exports = router;
+export default router;

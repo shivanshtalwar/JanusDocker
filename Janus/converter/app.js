@@ -1,17 +1,11 @@
-var express = require('express');
-var path = require('path');
-// var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-
-var indexRouter = require('./routes/webhook');
-
-var app = express();
-
-app.use(logger('dev'));
+const express = require("express");
+const path = require("path");
+const logger = require("morgan");
+const indexRouter = require("./routes/webhook").default;
+const app = express();
+app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use(cookieParser());
-
-app.use('/', indexRouter);
+app.use("/", indexRouter);
 
 module.exports = app;
