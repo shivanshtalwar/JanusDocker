@@ -92,20 +92,23 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           if (_.size(wavFile.files) < 2) {
             throw new Error("Files Insufficient for conversion");
           }
-          const targetPath = _.join(targetDirectoryPath, wavFile.callerId + ".wav");
+          const targetFile = wavFile.callerId + ".wav";
+          const targetPath = targetDirectoryPath;
           const command = ffmpeg();
           _.each(wavFile.files, (wavFile) => {
             command.addInput(wavFile.wavFilePath);
           });
           command
-            .complexFilter([
-              {
-                filter: "amix",
-                inputs: wavFile.files.length,
-                options: ["duration=first", "dropout_transition=0"],
-              },
-            ])
-            .addOutput(targetPath, { end: true })
+            .mergeToFile(targetFile, targetPath)
+            // command
+            //   .complexFilter([
+            //     {
+            //       filter: "amix",
+            //       inputs: wavFile.files.length,
+            //       options: ["duration=first", "dropout_transition=0"],
+            //     },
+            //   ])
+            //   .addOutput(targetPath, { end: true })
             .on("error", (err) => {
               console.log("An error occurred: " + err);
               reject();
