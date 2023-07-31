@@ -88,44 +88,37 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
   if (!gotError) {
     try {
       await Aigle.eachSeries(wavFilesToProcess, async (wavFile) => {
-        await new Aigle((resolve, reject) => {
-          if (_.size(wavFile.files) < 2) {
-            throw new Error("Files Insufficient for conversion");
-          }
-          const targetFile = wavFile.callerId + ".wav";
-          const targetPath = targetDirectoryPath;
-          const command = ffmpeg();
-          _.each(wavFile.files, (wavFile) => {
-            command.addInput(wavFile.wavFilePath);
-          });
-          command
-            .mergeToFile(targetFile, './')
-            // command
-            //   .complexFilter([
-            //     {
-            //       filter: "amix",
-            //       inputs: wavFile.files.length,
-            //       options: ["duration=first", "dropout_transition=0"],
-            //     },
-            //   ])
-            .addOutput(targetPath, { end: true })
-            .on("error", (err) => {
-              console.log("An error occurred: " + err);
-              reject();
-            })
-            .on("end", function () {
-              console.log("Processing finished !");
-              each(wavFile.files, (file) => {
-                rmSync(file.wavFilePath, { force: true, recursive: true });
-              });
-              resolve();
-            })
-            .run();
+        if (_.size(wavFile.files) < 2) {
+          throw new Error("Files Insufficient for conversion");
+        }
+        const targetPath = join(targetDirectoryPath, `${wavFile.callerId}.wav`);
+        const inputFiles = _.map(wavFile.files, ({ wavFilePath }) => {
+          return wavFilePath;
         });
+        await downMixAudioFiles(targetPath, inputFiles);
       });
     } catch (error) {
       console.error(error);
     }
   }
+};
+
+const downMixAudioFiles = (outputFilePath, ...inputFilePaths) => {
+  return new Promise((resolve, reject) => {
+    const command = ffmpeg();
+    _.each(inputFilePaths, (path) => {
+      command.addInput(path);
+    });
+    command
+      .complexFilter([`amix=inputs=${_.size(inputFilePaths)}:duration=longest`])
+      .output(outputFilePath)
+      .on("error", (err) => {
+        reject(err);
+      })
+      .on("end", function (err, stdout, stderr) {
+        resolve();
+      })
+      .run();
+  });
 };
 export { convertMjrFilesToAudioFile };
