@@ -35,10 +35,10 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
       const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
       const fileNameTokens = _.split(fileNameWithoutExtension, "-");
       const [callerId, owner, type] = fileNameTokens;
-      if (size(fileNameTokens) !== 3) {
-        throw "Invalid mjr file name";
+      if (_.size(fileNameTokens) !== 3) {
+        throw new Error("Invalid mjr file name");
       }
-      const wavFilePath = _.join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
+      const wavFilePath = join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
       if (!wavFilesToProcess[callerId]) {
         wavFilesToProcess[callerId] = {
           callerId,
@@ -89,12 +89,12 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
     try {
       await Aigle.each(wavFilesToProcess, async (wavFile) => {
         await new Aigle((resolve, reject) => {
-          if (size(wavFile.files) < 2) {
-            throw "Files Insufficient for conversion";
+          if (_.size(wavFile.files) < 2) {
+            throw new Error("Files Insufficient for conversion");
           }
-          const targetPath = join(targetDirectoryPath, wavFile.callerId + ".wav");
+          const targetPath = _.join(targetDirectoryPath, wavFile.callerId + ".wav");
           const command = ffmpeg();
-          each(wavFile.files, (wavFile) => {
+          _.each(wavFile.files, (wavFile) => {
             command.addInput(wavFile.wavFilePath);
           });
           command
