@@ -42,6 +42,9 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
     fileStream.on("close", () => {
       resolve();
     });
+    fileStream.on("end", () => {
+      resolve();
+    });
     fileStream.on("error", (error) => {
       reject(error);
     });
