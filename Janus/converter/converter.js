@@ -63,7 +63,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           type,
         });
       }
-      await new Aigle((resolve, reject) => {
+      await new Promise((resolve, reject) => {
         const { events: converter } = spawnObservable(`janus-pp-rec`, [filePath, wavFilePath]);
         converter.subscribe({
           next: (data) => {
@@ -74,7 +74,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
           },
           complete: () => {
             console.info("completed");
-            rmSync(filePath, { force: true, recursive: true });
+            // rmSync(filePath, { force: true, recursive: true });
             resolve();
           },
         });
@@ -86,20 +86,18 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
     }
   });
   if (!gotError) {
-    try {
-      await Aigle.eachSeries(wavFilesToProcess, async (wavFile) => {
-        if (_.size(wavFile.files) < 2) {
-          throw new Error("Files Insufficient for conversion");
-        }
-        const targetPath = join(targetDirectoryPath, `${wavFile.callerId}.wav`);
-        const inputFiles = _.map(wavFile.files, ({ wavFilePath }) => {
-          return wavFilePath;
-        });
-        await downMixAudioFiles(targetPath, inputFiles);
+    await Aigle.eachSeries(wavFilesToProcess, async (wavFile) => {
+      if (_.size(wavFile.files) < 2) {
+        throw new Error("Files Insufficient for conversion");
+      }
+      const targetPath = join(targetDirectoryPath, `${wavFile.callerId}.wav`);
+      const inputFiles = _.map(wavFile.files, ({ wavFilePath }) => {
+        return wavFilePath;
       });
-    } catch (error) {
-      console.error(error);
-    }
+      console.log(targetPath);
+      console.log(inputFiles);
+      await downMixAudioFiles(targetPath, inputFiles);
+    });
   }
 };
 

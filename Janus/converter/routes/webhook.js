@@ -17,7 +17,6 @@ const recordingDirectory = "../../recordings";
 const baseDirPath = join(__dirname, recordingDirectory);
 const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
-
 // object to store and manage all successful calls for recordings
 let sessions = {};
 
@@ -41,18 +40,22 @@ const uploadFileToServer = async (url, token, { fileBuffer, callId }) => {
 setInterval(async () => {
   await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
     if (recordingEnd) {
+      try{
       console.log("recording ended");
-      // TODO: process recordings and upload (joining two mjr audio file converting to wav and upload)
       await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
       console.warn("everything done");
-      const targetDir = join(__dirname, recordingDirectory);
-      const recordingFile = join(targetDir, `${callId}.wav`);
+      const recordingFile = join(baseDirPath, `${callId}.wav`);
+      console.log(recordingFile)
       await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
         callId,
         fileBuffer: readFileSync(recordingFile),
       });
       rmSync(recordingFile, { force: true });
       delete sessions[`${sessionId}_${handleId}`];
+      }
+      catch(error){
+        console.error(error)
+      }
     }
   });
 }, 1000);
@@ -108,5 +111,44 @@ router.post("/event-handler", function (req, res, next) {
 router.get("/health", function (req, res, next) {
   res.json({ message: "converter operational" });
 });
-
+// sessions = {
+//   ...sessions,
+//   ...processEvents(
+//     [
+//       {
+//         event: {
+//           // name:'detached',
+//           plugin: "janus.plugin.sip",
+//           data: {
+//             "call-id": "test",
+//             event: "accepted",
+//           },
+//         },
+//         session_id: 1,
+//         handle_id: 2,
+//       },
+//     ],
+//     sessions
+//   ),
+// };
+// sessions = {
+//   ...sessions,
+//   ...processEvents(
+//     [
+//       {
+//         event: {
+//           // name:'detached',
+//           plugin: "janus.plugin.sip",
+//           data: {
+//             "call-id": "test",
+//             event: "hangup",
+//           },
+//         },
+//         session_id: 1,
+//         handle_id: 2,
+//       },
+//     ],
+//     sessions
+//   ),
+// };
 export default router;
