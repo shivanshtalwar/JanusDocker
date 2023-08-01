@@ -36,23 +36,16 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
       await axios.post(url, form, {
         headers,
       });
+      fileStream.on("close", resolve);
+      fileStream.on("end", resolve);
+      fileStream.on("error", reject);
     } catch (error) {
       reject(error);
     }
-    fileStream.on("close", () => {
-      resolve();
-    });
-    fileStream.on("end", () => {
-      resolve();
-    });
-    fileStream.on("error", (error) => {
-      reject(error);
-    });
   });
 };
 
-// a timer to process each recording and remove them from session after uploading
-setInterval(async () => {
+const processRecordingUpload = async () => {
   await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
     if (recordingEnd) {
       try {
@@ -69,7 +62,16 @@ setInterval(async () => {
       }
     }
   });
-}, 1000);
+};
+
+// a timer to process each recording and remove them from session after uploading
+const start = () => {
+  setTimeout(async () => {
+    await processRecordingUpload();
+    start();
+  }, 1000);
+};
+start();
 
 const processEvents = (events, state) => {
   return _.transform(
