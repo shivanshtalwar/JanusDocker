@@ -18,19 +18,33 @@ const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
 // object to store and manage all successful calls for recordings
 let sessions = {};
-
-const uploadFileToServer = async (url, token, { fileBuffer, callId }) => {
-  const form = new FormData();
-  // Second argument  can take Buffer or Stream (lazily read during the request) too.
-  // Third argument is filename if you want to simulate a file upload. Otherwise omit.
-  form.append("callId", callId);
-  form.append("file", fileBuffer, `${callId}.wav`);
-  const headers = {
-    ...form.getHeaders(),
-    authorization: `Bearer ${token}`,
-  };
-  return axios.post(url, form, {
-    headers,
+/**
+ *
+ */
+const uploadFileToServer = async (url, token, { fileStream, callId }) => {
+  new Promise(async (resolve, reject) => {
+    const form = new FormData();
+    // Second argument  can take Buffer or Stream (lazily read during the request) too.
+    // Third argument is filename if you want to simulate a file upload. Otherwise omit.
+    form.append("callId", callId);
+    form.append("file", fileStream, `${callId}.wav`);
+    const headers = {
+      ...form.getHeaders(),
+      authorization: `Bearer ${token}`,
+    };
+    try {
+      await axios.post(url, form, {
+        headers,
+      });
+    } catch (error) {
+      reject(error)
+    }
+    fileStream.on("close", () => {
+      resolve();
+    });
+    fileStream.on("error", (error) => {
+      reject(error);
+    });
   });
 };
 
@@ -43,7 +57,7 @@ setInterval(async () => {
         const recordingFile = join(baseDirPath, `${callId}.wav`);
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
-          fileBuffer: createReadStream(recordingFile),
+          fileStream: createReadStream(recordingFile),
         });
         // rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
