@@ -1,5 +1,6 @@
 import Aigle from "aigle";
 import _ from "lodash";
+import request from "request";
 import axios from "axios";
 import FormData from "form-data";
 import { dirname, join } from "path";
@@ -23,26 +24,40 @@ let sessions = {};
  */
 const uploadFileToServer = async (url, token, { fileStream, callId }) => {
   return new Promise(async (resolve, reject) => {
-    const form = new FormData();
+    // const form = new FormData();
     // Second argument  can take Buffer or Stream (lazily read during the request) too.
     // Third argument is filename if you want to simulate a file upload. Otherwise omit.
-    form.append("callId", callId);
-    form.append("file", fileStream, `${callId}.wav`);
+    // form.append("callId", callId);
+    // form.append("file", fileStream, `${callId}.wav`);
     const headers = {
-      ...form.getHeaders(),
+      // ...form.getHeaders(),
       authorization: `Bearer ${token}`,
     };
-    try {
-      await axios.post(url, form, {
+    request.post(
+      {
         headers,
-      });
-      fileStream.on("close", resolve);
-      fileStream.on("finish", resolve);
-      fileStream.on("end", resolve);
-      fileStream.on("error", reject);
-    } catch (error) {
-      reject(error);
-    }
+        url,
+        formData: {
+          callId,
+          file: {
+            value: fileStream,
+            options: {
+              contentType: "audio/wav; charset=utf-8",
+              filename: `${callId}.wav`,
+            },
+          },
+        },
+      },
+      (err, res, body) => {
+        if (err || res.statusCode !== 200) {
+          console.log(err || "Error status code: " + res.statusCode);
+          console.log(body);
+          reject({ err, body });
+          return;
+        }
+        resolve(body);
+      }
+    );
   });
 };
 
@@ -52,7 +67,7 @@ const processRecordingUpload = async () => {
       try {
         await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
         const recordingFile = join(baseDirPath, `${callId}.wav`);
-        console.log(`${recordingFile} created proceeding to upload`)
+        console.log(`${recordingFile} created proceeding to upload`);
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
           fileStream: createReadStream(recordingFile),
