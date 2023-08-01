@@ -22,7 +22,7 @@ let sessions = {};
  *
  */
 const uploadFileToServer = async (url, token, { fileStream, callId }) => {
-  new Promise(async (resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const form = new FormData();
     // Second argument  can take Buffer or Stream (lazily read during the request) too.
     // Third argument is filename if you want to simulate a file upload. Otherwise omit.
@@ -37,7 +37,7 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
         headers,
       });
     } catch (error) {
-      reject(error)
+      reject(error);
     }
     fileStream.on("close", () => {
       resolve();
@@ -59,7 +59,7 @@ setInterval(async () => {
           callId,
           fileStream: createReadStream(recordingFile),
         });
-        // rmSync(recordingFile, { force: true });
+        rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
       } catch (error) {
         console.error(error);

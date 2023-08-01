@@ -19,7 +19,7 @@ services:
       - ./recordings:/recordings
     env_file:
       - .env
-    restart: always
+    # restart: always
     network_mode: "host"
 
 volumes:
