@@ -13,8 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "../../.env") });
 
 const router = Router();
-const recordingDirectory = "../../recordings";
-const baseDirPath = join(__dirname, recordingDirectory);
+const baseDirPath = "/recordings";
 const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
 // object to store and manage all successful calls for recordings
