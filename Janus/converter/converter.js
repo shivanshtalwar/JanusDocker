@@ -96,7 +96,7 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
       });
       console.log(targetPath);
       console.log(inputFiles);
-      await downMixAudioFiles(targetPath, inputFiles);
+      await downMixAudioFiles(targetPath, ...inputFiles);
     });
   }
 };
