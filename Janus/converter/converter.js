@@ -66,19 +66,15 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
       await new Promise((resolve, reject) => {
         const { events: converter } = spawnObservable(`janus-pp-rec`, [filePath, wavFilePath]);
         converter.subscribe({
-          next: (data) => {
-            console.info(data);
-          },
           error: (error) => {
             reject(error);
           },
           complete: () => {
-            console.info("completed");
-            // rmSync(filePath, { force: true, recursive: true });
             resolve();
           },
         });
       });
+      rmSync(filePath, { force: true, recursive: true });
     } catch (error) {
       console.error(error);
       gotError = true;
@@ -94,8 +90,6 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
       const inputFiles = _.map(wavFile.files, ({ wavFilePath }) => {
         return wavFilePath;
       });
-      console.log(targetPath);
-      console.log(inputFiles);
       await downMixAudioFiles(targetPath, ...inputFiles);
     });
   }

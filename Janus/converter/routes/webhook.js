@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "../../.env") });
 
 const router = Router();
-const baseDirPath = "/recordings";
+const baseDirPath = process.env.RECORDINGS_VOLUME ?? "/recordings";
 const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
 // object to store and manage all successful calls for recordings
@@ -29,7 +29,6 @@ const uploadFileToServer = async (url, token, { fileBuffer, callId }) => {
     ...form.getHeaders(),
     authorization: `Bearer ${token}`,
   };
-  console.log(headers);
   return axios.post(url, form, {
     headers,
   });
@@ -39,22 +38,18 @@ const uploadFileToServer = async (url, token, { fileBuffer, callId }) => {
 setInterval(async () => {
   await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
     if (recordingEnd) {
-      try{
-      console.log("recording ended");
-      await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
-      console.warn("everything done");
-      const recordingFile = join(baseDirPath, `${callId}.wav`);
-      console.log(recordingFile)
-      await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-        callId,
-        fileBuffer: readFileSync(recordingFile),
-      });
-      rmSync(recordingFile, { force: true });
+      try {
+        await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
+        const recordingFile = join(baseDirPath, `${callId}.wav`);
+        await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
+          callId,
+          fileBuffer: readFileSync(recordingFile),
+        });
+        rmSync(recordingFile, { force: true });
+      } catch (error) {
+        console.error(error);
+      }
       delete sessions[`${sessionId}_${handleId}`];
-      }
-      catch(error){
-        console.error(error)
-      }
     }
   });
 }, 1000);
@@ -64,13 +59,10 @@ const processEvents = (events, state) => {
     events,
     (result, item) => {
       const { session_id, handle_id } = item;
-      // console.log(item)
       if (item?.event?.plugin === "janus.plugin.sip") {
         // when call is disconnected for any reason eg nuclear attack
         if (item?.event?.name === "detached") {
-          console.log("came here detached");
           if (result[`${session_id}_${handle_id}`]) {
-            console.log("came here detached");
             result[`${session_id}_${handle_id}`].recordingStart = false;
             result[`${session_id}_${handle_id}`].recordingEnd = true;
           }
@@ -80,7 +72,6 @@ const processEvents = (events, state) => {
           // when call is disconnected gracefully by hangup from either side
           if (eventName === "hangup") {
             if (result[`${session_id}_${handle_id}`]) {
-              console.log("came here hangup");
               result[`${session_id}_${handle_id}`].recordingStart = false;
               result[`${session_id}_${handle_id}`].recordingEnd = true;
             }
@@ -110,44 +101,5 @@ router.post("/event-handler", function (req, res, next) {
 router.get("/health", function (req, res, next) {
   res.json({ message: "converter operational" });
 });
-// sessions = {
-//   ...sessions,
-//   ...processEvents(
-//     [
-//       {
-//         event: {
-//           // name:'detached',
-//           plugin: "janus.plugin.sip",
-//           data: {
-//             "call-id": "test",
-//             event: "accepted",
-//           },
-//         },
-//         session_id: 1,
-//         handle_id: 2,
-//       },
-//     ],
-//     sessions
-//   ),
-// };
-// sessions = {
-//   ...sessions,
-//   ...processEvents(
-//     [
-//       {
-//         event: {
-//           // name:'detached',
-//           plugin: "janus.plugin.sip",
-//           data: {
-//             "call-id": "test",
-//             event: "hangup",
-//           },
-//         },
-//         session_id: 1,
-//         handle_id: 2,
-//       },
-//     ],
-//     sessions
-//   ),
-// };
+
 export default router;
