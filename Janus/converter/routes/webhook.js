@@ -57,6 +57,7 @@ const processRecordingUpload = async () => {
         });
         rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
+        console.log("completed", sessionId, handleId, recordingFile);
       } catch (error) {
         console.error(error);
       }
