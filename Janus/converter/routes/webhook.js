@@ -5,7 +5,7 @@ import FormData from "form-data";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { readFileSync, rmSync } from "fs";
+import { readFileSync, rmSync, createReadStream } from "fs";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
 
@@ -41,15 +41,16 @@ setInterval(async () => {
       try {
         await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
         const recordingFile = join(baseDirPath, `${callId}.wav`);
+        const readStream = createReadStream(recordingFile, { encoding: "utf-8" });
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
-          fileBuffer: readFileSync(recordingFile),
+          fileBuffer: readStream,
         });
         rmSync(recordingFile, { force: true });
+        delete sessions[`${sessionId}_${handleId}`];
       } catch (error) {
         console.error(error);
       }
-      delete sessions[`${sessionId}_${handleId}`];
     }
   });
 }, 1000);
