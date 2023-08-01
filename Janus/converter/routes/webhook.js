@@ -37,6 +37,7 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
         headers,
       });
       fileStream.on("close", resolve);
+      fileStream.on("finish", resolve);
       fileStream.on("end", resolve);
       fileStream.on("error", reject);
     } catch (error) {
@@ -51,6 +52,7 @@ const processRecordingUpload = async () => {
       try {
         await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
         const recordingFile = join(baseDirPath, `${callId}.wav`);
+        console.log(`${recordingFile} created proceeding to upload`)
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
           fileStream: createReadStream(recordingFile),
