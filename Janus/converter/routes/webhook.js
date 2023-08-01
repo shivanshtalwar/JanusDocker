@@ -1,6 +1,5 @@
 import Aigle from "aigle";
 import _ from "lodash";
-import request from "request";
 import axios from "axios";
 import FormData from "form-data";
 import { dirname, join } from "path";
@@ -23,42 +22,26 @@ let sessions = {};
  *
  */
 const uploadFileToServer = async (url, token, { fileStream, callId }) => {
-  return new Promise(async (resolve, reject) => {
-    // const form = new FormData();
-    // Second argument  can take Buffer or Stream (lazily read during the request) too.
-    // Third argument is filename if you want to simulate a file upload. Otherwise omit.
-    // form.append("callId", callId);
-    // form.append("file", fileStream, `${callId}.wav`);
-    const headers = {
-      // ...form.getHeaders(),
-      authorization: `Bearer ${token}`,
-    };
-    request.post(
-      {
-        headers,
-        url,
-        formData: {
-          callId,
-          file: {
-            value: fileStream,
-            options: {
-              contentType: "audio/wav; charset=utf-8",
-              filename: `${callId}.wav`,
-            },
-          },
-        },
-      },
-      (err, res, body) => {
-        if (err || res.statusCode !== 200) {
-          console.log(err || "Error status code: " + res.statusCode);
-          console.log(body);
-          reject({ err, body });
-          return;
-        }
-        resolve(body);
-      }
-    );
-  });
+  const form = new FormData();
+  form.append("callId", callId);
+  form.append("file", fileStream, `${callId}.wav`);
+  const headers = {
+    ...form.getHeaders(),
+    authorization: `Bearer ${token}`,
+  };
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      fileStream.on("end", (y) => {
+        resolve();
+      });
+      fileStream.on("error", (error) => {
+        reject();
+      });
+    }),
+    axios.post(url, form, {
+      headers,
+    }),
+  ]);
 };
 
 const processRecordingUpload = async () => {
@@ -70,7 +53,7 @@ const processRecordingUpload = async () => {
         console.log(`${recordingFile} created proceeding to upload`);
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
-          fileStream: createReadStream(recordingFile),
+          fileStream: createReadStream(recordingFile, { encoding: "utf-8" }),
         });
         rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
