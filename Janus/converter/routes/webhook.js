@@ -53,7 +53,7 @@ const processRecordingUpload = async () => {
         console.log(`${recordingFile} created proceeding to upload`);
         await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
           callId,
-          fileStream: createReadStream(recordingFile, { encoding: "utf-8" }),
+          fileStream: createReadStream(recordingFile),
         });
         rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
