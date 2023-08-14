@@ -6,10 +6,9 @@ LABEL description="Provides an image with Janus Gateway"
 RUN echo "gfdgjjjgf"
 COPY *.patch /opt/
 
-RUN git clone https://github.com/meetecho/janus-gateway.git \
+RUN git clone https://github.com/Gwumktcorp/janus-gateway.git \
     && cd janus-gateway \
-    && git checkout $COMMIT_HASH \
-    && git apply /opt/encrypted-uri.patch --verbose \
+    # && git checkout $COMMIT_HASH \
     && sh autogen.sh \
     && ./configure --prefix=/opt/janus  \
     && make CFLAGS='-std=c99' \
