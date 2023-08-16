@@ -28,11 +28,7 @@ const getSessions = async () => {
 const setSessions = async (sessions) => {
   return storage.setItem("sessions", sessions);
 };
-// // object to store and manage all successful calls for recordings
-// let sessions = {};
-/**
- *
- */
+
 const uploadFileToServer = async (url, token, { fileStream, callId }) => {
   const form = new FormData();
   form.append("callId", callId);
@@ -70,7 +66,7 @@ const processRecordingUpload = async () => {
         });
         rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
-        setSessions(sessions);
+        await setSessions(sessions);
         console.log("completed", sessionId, handleId, recordingFile);
       } catch (error) {
         console.error(error);
@@ -129,7 +125,7 @@ const processEvents = (events, state) => {
 
 router.post("/event-handler", async function (req, res, next) {
   const sessions = await getSessions();
-  setSessions({ ...sessions, ...processEvents(req.body, sessions) });
+  await setSessions({ ...sessions, ...processEvents(req.body, sessions) });
   res.json({});
 });
 
