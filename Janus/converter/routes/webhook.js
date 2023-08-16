@@ -4,21 +4,32 @@ import FormData from "form-data";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createReadStream, readFileSync, rmSync, stat } from "fs";
+import { createReadStream, rmSync } from "fs";
+import storage from "node-persist";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
-import * as glob from "glob";
 import Aigle from "aigle";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "../../.env") });
-
+await storage.init();
 const router = Router();
 const baseDirPath = process.env.RECORDINGS_VOLUME ?? "/recordings";
 const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
 const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
-// object to store and manage all successful calls for recordings
-let sessions = {};
+
+const getSessions = async () => {
+  const value = storage.getItem("sessions");
+  if (!value) {
+    return {};
+  }
+  return value;
+};
+const setSessions = async (sessions) => {
+  return storage.setItem("sessions", sessions);
+};
+// // object to store and manage all successful calls for recordings
+// let sessions = {};
 /**
  *
  */
@@ -45,79 +56,27 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
   ]);
 };
 
-function fileStoppedModifying(filePath) {
-  return new Promise((resolve, reject) => {
-    let previousTimestamp;
-    const checkRecursively = () => {
-      stat(filePath, (err, stats) => {
-        if (err) {
-          reject(err);
-        }
-        if (!previousTimestamp) {
-          // First time, just record the current timestamp
-          previousTimestamp = stats.mtimeMs;
-          console.log("Initial timestamp recorded:", previousTimestamp);
-        } else if (stats.mtimeMs === previousTimestamp) {
-          console.log("File has stopped being modified.");
-          resolve(true);
-        } else {
-          // File has been modified, update the timestamp
-          previousTimestamp = stats.mtimeMs;
-          console.log("File has been modified. New timestamp:", previousTimestamp);
-        }
-        // Schedule the next check after a certain interval
-        setTimeout(checkRecursively, 1000); // You can adjust the interval as needed
-      });
-      checkRecursively();
-    };
-  });
-}
-
 const processRecordingUpload = async () => {
-  const files = glob.globSync(`/${baseDirPath}/*-peer-audio.mjr`);
-  await Aigle.eachSeries(files, async (path) => {
-    const callId = _.first(_.split(_.last(_.split(path, "/")), "-"));
-    if (!_.size(callId)) {
-      return;
+  const sessions = await getSessions();
+  await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
+    if (recordingEnd) {
+      try {
+        await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
+        const recordingFile = join(baseDirPath, `${callId}.wav`);
+        console.log(`${recordingFile} created proceeding to upload`);
+        await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
+          callId,
+          fileStream: createReadStream(recordingFile),
+        });
+        rmSync(recordingFile, { force: true });
+        delete sessions[`${sessionId}_${handleId}`];
+        setSessions(sessions);
+        console.log("completed", sessionId, handleId, recordingFile);
+      } catch (error) {
+        console.error(error);
+      }
     }
-    console.log("call recording processing started ", callId);
-    await processRecordingByCallId(callId);
-    console.log("call recording processing finished ", callId);
   });
-
-  // await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
-  //   if (recordingEnd) {
-  //     try {
-  //       await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
-  //       const recordingFile = join(baseDirPath, `${callId}.wav`);
-  //       console.log(`${recordingFile} created proceeding to upload`);
-  //       await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-  //         callId,
-  //         fileStream: createReadStream(recordingFile),
-  //       });
-  //       rmSync(recordingFile, { force: true });
-  //       delete sessions[`${sessionId}_${handleId}`];
-  //       console.log("completed", sessionId, handleId, recordingFile);
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   }
-  // });
-};
-
-const processRecordingByCallId = async (callId) => {
-  try {
-    await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
-    const recordingFile = join(baseDirPath, `${callId}.wav`);
-    console.log(`${recordingFile} created proceeding to upload`);
-    await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-      callId,
-      fileStream: createReadStream(recordingFile),
-    });
-    rmSync(recordingFile, { force: true });
-  } catch (error) {
-    console.error(error);
-  }
 };
 
 // a timer to process each recording and remove them from session after uploading
@@ -128,7 +87,6 @@ const start = () => {
   }, 1000);
 };
 start();
-
 
 const processEvents = (events, state) => {
   return _.transform(
@@ -169,8 +127,9 @@ const processEvents = (events, state) => {
   );
 };
 
-router.post("/event-handler", function (req, res, next) {
-  sessions = { ...sessions, ...processEvents(req.body, sessions) };
+router.post("/event-handler", async function (req, res, next) {
+  const sessions = await getSessions();
+  setSessions({ ...sessions, ...processEvents(req.body, sessions) });
   res.json({});
 });
 
