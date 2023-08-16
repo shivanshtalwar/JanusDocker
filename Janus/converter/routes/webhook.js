@@ -1,4 +1,3 @@
-import Aigle from "aigle";
 import _ from "lodash";
 import axios from "axios";
 import FormData from "form-data";
@@ -8,6 +7,7 @@ import dotenv from "dotenv";
 import { createReadStream, readFileSync, rmSync } from "fs";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
+import * as glob from "glob";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "../../.env") });
@@ -45,24 +45,43 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
 };
 
 const processRecordingUpload = async () => {
-  await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
-    if (recordingEnd) {
-      try {
-        await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
-        const recordingFile = join(baseDirPath, `${callId}.wav`);
-        console.log(`${recordingFile} created proceeding to upload`);
-        await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-          callId,
-          fileStream: createReadStream(recordingFile),
-        });
-        rmSync(recordingFile, { force: true });
-        delete sessions[`${sessionId}_${handleId}`];
-        console.log("completed", sessionId, handleId, recordingFile);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  });
+  const callId = _.first(_.split(_.last(_.split(glob.globSync(`/${baseDirPath}/*-peer-audio.mjr`), "/")), "-"));
+  console.log("call recording processing started ", callId);
+  await processRecordingByCallId(callId);
+  console.log("call recording processing finished ", callId);
+  // await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
+  //   if (recordingEnd) {
+  //     try {
+  //       await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
+  //       const recordingFile = join(baseDirPath, `${callId}.wav`);
+  //       console.log(`${recordingFile} created proceeding to upload`);
+  //       await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
+  //         callId,
+  //         fileStream: createReadStream(recordingFile),
+  //       });
+  //       rmSync(recordingFile, { force: true });
+  //       delete sessions[`${sessionId}_${handleId}`];
+  //       console.log("completed", sessionId, handleId, recordingFile);
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   }
+  // });
+};
+
+const processRecordingByCallId = async (callId) => {
+  try {
+    await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
+    const recordingFile = join(baseDirPath, `${callId}.wav`);
+    console.log(`${recordingFile} created proceeding to upload`);
+    await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
+      callId,
+      fileStream: createReadStream(recordingFile),
+    });
+    rmSync(recordingFile, { force: true });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 // a timer to process each recording and remove them from session after uploading
