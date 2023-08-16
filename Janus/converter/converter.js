@@ -91,6 +91,9 @@ const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
         return wavFilePath;
       });
       await downMixAudioFiles(targetPath, ...inputFiles);
+      _.each(wavFile.files, ({ wavFilePath }) => {
+        rmSync(wavFilePath, { recursive: true, force: true });
+      });
     });
   }
 };
