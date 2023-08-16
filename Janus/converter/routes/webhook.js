@@ -46,6 +46,9 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
 
 const processRecordingUpload = async () => {
   const callId = _.first(_.split(_.last(_.split(glob.globSync(`/${baseDirPath}/*-peer-audio.mjr`), "/")), "-"));
+  if (!_.size(callId)) {
+    return;
+  }
   console.log("call recording processing started ", callId);
   await processRecordingByCallId(callId);
   console.log("call recording processing finished ", callId);
