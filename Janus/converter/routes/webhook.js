@@ -4,10 +4,11 @@ import FormData from "form-data";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createReadStream, readFileSync, rmSync } from "fs";
+import { createReadStream, readFileSync, rmSync, stat } from "fs";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
 import * as glob from "glob";
+import Aigle from "aigle";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, "../../.env") });
@@ -44,14 +45,46 @@ const uploadFileToServer = async (url, token, { fileStream, callId }) => {
   ]);
 };
 
+function fileStoppedModifying(filePath) {
+  return new Promise((resolve, reject) => {
+    let previousTimestamp;
+    const checkRecursively = () => {
+      stat(filePath, (err, stats) => {
+        if (err) {
+          reject(err);
+        }
+        if (!previousTimestamp) {
+          // First time, just record the current timestamp
+          previousTimestamp = stats.mtimeMs;
+          console.log("Initial timestamp recorded:", previousTimestamp);
+        } else if (stats.mtimeMs === previousTimestamp) {
+          console.log("File has stopped being modified.");
+          resolve(true);
+        } else {
+          // File has been modified, update the timestamp
+          previousTimestamp = stats.mtimeMs;
+          console.log("File has been modified. New timestamp:", previousTimestamp);
+        }
+        // Schedule the next check after a certain interval
+        setTimeout(checkRecursively, 1000); // You can adjust the interval as needed
+      });
+      checkRecursively();
+    };
+  });
+}
+
 const processRecordingUpload = async () => {
-  const callId = _.first(_.split(_.last(_.split(glob.globSync(`/${baseDirPath}/*-peer-audio.mjr`), "/")), "-"));
-  if (!_.size(callId)) {
-    return;
-  }
-  console.log("call recording processing started ", callId);
-  await processRecordingByCallId(callId);
-  console.log("call recording processing finished ", callId);
+  const files = glob.globSync(`/${baseDirPath}/*-peer-audio.mjr`);
+  await Aigle.eachSeries(files, async (path) => {
+    const callId = _.first(_.split(_.last(_.split(path, "/")), "-"));
+    if (!_.size(callId)) {
+      return;
+    }
+    console.log("call recording processing started ", callId);
+    await processRecordingByCallId(callId);
+    console.log("call recording processing finished ", callId);
+  });
+
   // await Aigle.eachSeries(sessions, async ({ sessionId, handleId, callId, recordingEnd }) => {
   //   if (recordingEnd) {
   //     try {
@@ -95,6 +128,7 @@ const start = () => {
   }, 1000);
 };
 start();
+
 
 const processEvents = (events, state) => {
   return _.transform(
