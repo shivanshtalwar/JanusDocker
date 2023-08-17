@@ -8,6 +8,7 @@ import { createReadStream, rmSync } from "fs";
 import storage from "node-persist";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
+import { Storage } from "@google-cloud/storage";
 import Aigle from "aigle";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,8 +16,19 @@ dotenv.config({ path: join(__dirname, "../../.env") });
 await storage.init();
 const router = Router();
 const baseDirPath = process.env.RECORDINGS_VOLUME ?? "/recordings";
-const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
-const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
+// const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
+// const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
+const googleCloudAuthKeyFile = process.env.GCP_AUTH_KEY_FILE;
+const googleCloudBucket = process.env.GCS_BUCKET;
+
+const storage = new Storage({
+  keyFilename: googleCloudAuthKeyFile,
+});
+
+const uploadFileToGoogleBucket = async (bucketName, filePath) => {
+  // Uploads a local file to the bucket
+  return storage.bucket(bucketName).upload(filePath, { private: true });
+};
 
 const getSessions = async () => {
   const value = storage.getItem("sessions");
@@ -25,6 +37,7 @@ const getSessions = async () => {
   }
   return value;
 };
+
 const setSessions = async (sessions) => {
   return storage.setItem("sessions", sessions);
 };
@@ -60,10 +73,12 @@ const processRecordingUpload = async () => {
         await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
         const recordingFile = join(baseDirPath, `${callId}.wav`);
         console.log(`${recordingFile} created proceeding to upload`);
-        await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-          callId,
-          fileStream: createReadStream(recordingFile),
-        });
+        // await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
+        //   callId,
+        //   fileStream: createReadStream(recordingFile),
+        // });
+        const fileUploaded = await uploadFileToGoogleBucket(googleCloudBucket, recordingFile);
+        console.log("file was uploaded ", fileUploaded);
         rmSync(recordingFile, { force: true });
         delete sessions[`${sessionId}_${handleId}`];
         await setSessions(sessions);
