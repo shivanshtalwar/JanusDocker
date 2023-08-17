@@ -21,13 +21,13 @@ const baseDirPath = process.env.RECORDINGS_VOLUME ?? "/recordings";
 const googleCloudAuthKeyFile = process.env.GCP_AUTH_KEY_FILE;
 const googleCloudBucket = process.env.GCS_BUCKET;
 
-const storage = new Storage({
+const GoogleStorage = new Storage({
   keyFilename: googleCloudAuthKeyFile,
 });
 
 const uploadFileToGoogleBucket = async (bucketName, filePath) => {
   // Uploads a local file to the bucket
-  return storage.bucket(bucketName).upload(filePath, { private: true });
+  return GoogleStorage.bucket(bucketName).upload(filePath, { private: true });
 };
 
 const getSessions = async () => {
