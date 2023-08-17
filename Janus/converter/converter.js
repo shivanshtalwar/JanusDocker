@@ -1,10 +1,12 @@
 import { spawn } from "child_process";
 import _ from "lodash";
+import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 import ffmpeg from "fluent-ffmpeg";
 import Aigle from "aigle";
 import { join } from "path";
 import { Subject } from "rxjs";
 import { rmSync } from "fs";
+ffmpeg.setFfmpegPath(ffmpegPath.path);
 const spawnObservable = (cmd, args) => {
   const observable = new Subject();
   const writeObservable = new Subject();
@@ -37,10 +39,10 @@ const downMixWavFilesFromMjr = async (wavFilesToProcess, targetDirectoryPath) =>
     });
     try {
       await downMixAudioFiles(targetPath, ...inputFiles);
-      // _.each(wavFile.files, ({ wavFilePath, filePath }) => {
-      //   rmSync(wavFilePath, { recursive: true, force: true });
-      //   rmSync(filePath, { force: true, recursive: true });
-      // });
+      _.each(wavFile.files, ({ wavFilePath, filePath }) => {
+        rmSync(wavFilePath, { recursive: true, force: true });
+        rmSync(filePath, { force: true, recursive: true });
+      });
     } catch (error) {
       console.error("error occurred in downMixing of wav files", error);
       throw error;
@@ -49,56 +51,59 @@ const downMixWavFilesFromMjr = async (wavFilesToProcess, targetDirectoryPath) =>
 };
 
 const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
-  console.log(mjrFiles);
-  const wavFilesToProcess = await Aigle.transform(mjrFiles, async (wavFilesToProcess, filePath) => {
-    const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
-    const fileNameTokens = _.split(fileNameWithoutExtension, "-");
-    const [callerId, owner, type] = fileNameTokens;
-    if (_.size(fileNameTokens) !== 3) {
-      throw new Error("Invalid mjr file name");
-    }
-    const wavFilePath = join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
-    if (!wavFilesToProcess[callerId]) {
-      wavFilesToProcess[callerId] = {
-        callerId,
-        files: [],
-      };
-    }
-    const { events: converter } = spawnObservable(`janus-pp-rec`, [filePath, wavFilePath]);
-    try {
-      await new Promise((resolve, reject) => {
-        converter.subscribe({
-          error: (error) => {
-            console.log("error occurred in mjr conversion", error);
-            reject(error);
-          },
-          complete: async () => {
-            resolve();
-          },
+  const wavFilesToProcess = await Aigle.transform(
+    mjrFiles,
+    async (wavFilesToProcess, filePath) => {
+      const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
+      const fileNameTokens = _.split(fileNameWithoutExtension, "-");
+      const [callerId, owner, type] = fileNameTokens;
+      if (_.size(fileNameTokens) !== 3) {
+        throw new Error("Invalid mjr file name");
+      }
+      const wavFilePath = join(targetDirectoryPath, `${fileNameWithoutExtension}.wav`);
+      if (!wavFilesToProcess[callerId]) {
+        wavFilesToProcess[callerId] = {
+          callerId,
+          files: [],
+        };
+      }
+      const { events: converter } = spawnObservable(`janus-pp-rec`, [filePath, wavFilePath]);
+      try {
+        await new Promise((resolve, reject) => {
+          converter.subscribe({
+            error: (error) => {
+              console.log("error occurred in mjr conversion", error);
+              reject(error);
+            },
+            complete: async () => {
+              resolve();
+            },
+          });
         });
-      });
-      wavFilesToProcess[callerId].files.push({
-        filePath,
-        ready: true,
-        wavFilePath,
-        callerId,
-        fileNameWithoutExtension,
-        owner,
-        type,
-      });
-    } catch (error) {
-      wavFilesToProcess[callerId].files.push({
-        filePath,
-        ready: false,
-        wavFilePath,
-        callerId,
-        fileNameWithoutExtension,
-        owner,
-        type,
-      });
-      throw error;
-    }
-  });
+        wavFilesToProcess[callerId].files.push({
+          filePath,
+          ready: true,
+          wavFilePath,
+          callerId,
+          fileNameWithoutExtension,
+          owner,
+          type,
+        });
+      } catch (error) {
+        wavFilesToProcess[callerId].files.push({
+          filePath,
+          ready: false,
+          wavFilePath,
+          callerId,
+          fileNameWithoutExtension,
+          owner,
+          type,
+        });
+        throw error;
+      }
+    },
+    {}
+  );
   return downMixWavFilesFromMjr(wavFilesToProcess, targetDirectoryPath);
 };
 
