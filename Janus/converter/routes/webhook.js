@@ -4,7 +4,7 @@ import FormData from "form-data";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { createReadStream, rmSync } from "fs";
+import { rmSync } from "fs";
 import storage from "node-persist";
 import { Router } from "express";
 import { convertMjrFilesToAudioFile } from "../converter.js";
@@ -16,8 +16,6 @@ dotenv.config({ path: join(__dirname, "../../.env") });
 await storage.init();
 const router = Router();
 const baseDirPath = process.env.RECORDINGS_VOLUME ?? "/recordings";
-// const recordingUploadEndpoint = process.env.RECORDING_UPLOAD_ENDPOINT;
-// const recordingUploadToken = process.env.URI_CONV_AUTH_TOKEN;
 const googleCloudAuthKeyFile = process.env.GCP_AUTH_KEY_FILE;
 const googleCloudBucket = process.env.GCS_BUCKET;
 
@@ -73,10 +71,6 @@ const processRecordingUpload = async () => {
         await convertMjrFilesToAudioFile(baseDirPath, join(baseDirPath, `${callId}-peer-audio.mjr`), join(baseDirPath, `${callId}-user-audio.mjr`));
         const recordingFile = join(baseDirPath, `${callId}.wav`);
         console.log(`${recordingFile} created proceeding to upload`);
-        // await uploadFileToServer(recordingUploadEndpoint, recordingUploadToken, {
-        //   callId,
-        //   fileStream: createReadStream(recordingFile),
-        // });
         const fileUploaded = await uploadFileToGoogleBucket(googleCloudBucket, recordingFile);
         console.log("file was uploaded ", fileUploaded);
         rmSync(recordingFile, { force: true });
@@ -85,6 +79,11 @@ const processRecordingUpload = async () => {
         console.log("completed", sessionId, handleId, recordingFile);
       } catch (error) {
         console.error(error);
+        sessions[`${sessionId}_${handleId}`].errorCount += 1;
+        if (sessions[`${sessionId}_${handleId}`].errorCount === 3) {
+          delete sessions[`${sessionId}_${handleId}`];
+          await setSessions(sessions);
+        }
       }
     }
   });
@@ -129,6 +128,7 @@ const processEvents = (events, state) => {
               sessionId: session_id,
               handleId: handle_id,
               callId,
+              errorCount: 0,
             };
           }
         }
