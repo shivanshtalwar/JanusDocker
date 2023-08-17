@@ -37,10 +37,10 @@ const downMixWavFilesFromMjr = async (wavFilesToProcess, targetDirectoryPath) =>
     });
     try {
       await downMixAudioFiles(targetPath, ...inputFiles);
-      _.each(wavFile.files, ({ wavFilePath, filePath }) => {
-        rmSync(wavFilePath, { recursive: true, force: true });
-        rmSync(filePath, { force: true, recursive: true });
-      });
+      // _.each(wavFile.files, ({ wavFilePath, filePath }) => {
+      //   rmSync(wavFilePath, { recursive: true, force: true });
+      //   rmSync(filePath, { force: true, recursive: true });
+      // });
     } catch (error) {
       console.error("error occurred in downMixing of wav files", error);
       throw error;
@@ -49,6 +49,7 @@ const downMixWavFilesFromMjr = async (wavFilesToProcess, targetDirectoryPath) =>
 };
 
 const convertMjrFilesToAudioFile = async (targetDirectoryPath, ...mjrFiles) => {
+  console.log(mjrFiles);
   const wavFilesToProcess = await Aigle.transform(mjrFiles, async (wavFilesToProcess, filePath) => {
     const fileNameWithoutExtension = _.last(_.split(_.first(_.split(filePath, ".mjr")), "/"));
     const fileNameTokens = _.split(fileNameWithoutExtension, "-");
