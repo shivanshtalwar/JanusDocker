@@ -79,7 +79,8 @@ index a92e0adc..e93b1271 100644
 +	JANUS_LOG(LOG_INFO, "uri before conversion: %s\n", orig_uri);
 +	const char* base_url_endpoint = getenv("URI_CONV_ENDPOINT");
 +   JANUS_LOG(LOG_INFO, "endpoint: %s\n", base_url_endpoint);
-+	const char* url_endpoint = concat(base_url_endpoint, orig_uri);
++   char *encoded_orig_uri = curl_easy_escape(curl, orig_uri,-1);
++	const char* url_endpoint = concat(base_url_endpoint, encoded_orig_uri);
 +   JANUS_LOG(LOG_INFO, "url endpoint: %s\n", url_endpoint);
 +
 +	string_buffer_initialize(&strbuf);
